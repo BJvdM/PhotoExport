@@ -1,0 +1,75 @@
+set theDestRootText to "Media:disk2:Pictures2:"
+set theDestRoot to (theDestRootText) as alias
+set idx to 0
+
+set originalVolume to output volume of (get volume settings)
+set volume output volume 0
+
+tell application "iPhoto"
+	
+	select album "Photos"
+	
+	set thePhotos to (photos in album "Photos" whose not (name of its keywords contains "OK"))
+	
+	repeat with thisPhoto in thePhotos
+		
+		set thisPhotoDate to thisPhoto's date
+		set thisPhotoYear to (year of thisPhotoDate)
+		set thisPhotoMonth to (month of thisPhotoDate)
+		
+		set theDestFolderText to (theDestRoot as text) & (thisPhotoYear as text) & ":"
+		set theKeys to name of (keywords of thisPhoto)
+		
+		if theKeys contains "Professional" then
+			set theDestFolder2Text to theDestFolderText & (thisPhotoMonth as integer) & "_Professional" & ":"
+		else if theKeys contains "Holiday" then
+			set theDestFolder2Text to theDestFolderText & (thisPhotoMonth as integer) & "_Holiday" & ":"
+			
+		else
+			set theDestFolder2Text to theDestFolderText & (thisPhotoMonth as integer) & ":"
+		end if
+		set thisPhotoFile to image path of thisPhoto
+		
+		tell application "Finder"
+			
+			if not (exists (folder (theDestFolderText))) then
+				set theDestFolder to make new folder at theDestRoot with properties {name:(thisPhotoYear as text)}
+			else
+				set theDestFolder to theDestFolderText as alias
+			end if
+			
+			if not (exists (folder (theDestFolder2Text))) then
+				if theKeys contains "Professional" then
+					set newFolder2 to make new folder at theDestFolder with properties {name:((thisPhotoMonth as integer) & "_Professional") as text}
+				else if theKeys contains "Holiday" then
+					set newFolder2 to make new folder at theDestFolder with properties {name:((thisPhotoMonth as integer) & "_Holiday") as text}
+				else
+					set newFolder2 to make new folder at theDestFolder with properties {name:(thisPhotoMonth as integer)}
+				end if
+			end if
+			
+			set thisFile to POSIX file thisPhotoFile as alias
+			duplicate thisFile to folder (theDestFolder2Text) with replacing
+			
+		end tell
+		
+		select thisPhoto
+		assign keyword string "OK"
+		
+		set idx to idx + 1
+		
+	end repeat
+	
+	quit
+end tell
+
+tell application "Finder"
+	set logFolder to (container of (path to me)) as text
+end tell
+
+set logFile to open for access logFolder & "results.log" with write permission
+write ((current date) as text) & ", " & (idx as text) & " photos were copied" & return starting at (1 + (get eof logFile)) to logFile
+close access logFile
+
+
+set volume output volume originalVolume
