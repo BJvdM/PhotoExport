@@ -1,4 +1,4 @@
-set theDestRootText to "Media:disk2:Pictures2:"
+set theDestRootText to "Media:Pictures2:"
 set theDestRoot to (theDestRootText) as alias
 set idx to 0
 
@@ -7,9 +7,9 @@ set volume output volume 0
 
 tell application "iPhoto"
 	
-	select album "Photos"
+	select album "Mauritius 2014"
 	
-	set thePhotos to (photos in album "Photos" whose not (name of its keywords contains "OK"))
+	set thePhotos to (photos in album "Mauritius 2014" whose not (name of its keywords contains "OK"))
 	
 	repeat with thisPhoto in thePhotos
 		
@@ -49,7 +49,44 @@ tell application "iPhoto"
 			end if
 			
 			set thisFile to POSIX file thisPhotoFile as alias
-			duplicate thisFile to folder (theDestFolder2Text) with replacing
+			set newFile to (duplicate thisFile to folder (theDestFolder2Text) with replacing)
+			
+			set theDate to short date string of thisPhotoDate
+			set text item delimiters of AppleScript to "/"
+			set theDateItems to text items of theDate
+			set text item delimiters of AppleScript to "-"
+			set theDateString to theDateItems as string
+			
+			set theTime to time string of thisPhotoDate
+			set text item delimiters of AppleScript to ":"
+			set theTimeItems to text items of theTime
+			if length of item 1 of theTimeItems = 1 then
+				set item 1 of theTimeItems to "0" & item 1 of theTimeItems
+			end if
+			set text item delimiters of AppleScript to " "
+			set theSeconds to text items of (item 3 of theTimeItems)
+			set text item delimiters of AppleScript to ""
+			if item 2 of theSeconds = "PM" then
+				if (item 1 of theTimeItems as integer) < 12 then
+					set item 1 of theTimeItems to ((item 1 of theTimeItems as integer) + 12) as text
+				end if
+			end if
+			set theTimeString to (text items 1 thru 2 of theTimeItems as string) & (text items 1 thru 1 of theSeconds as string)
+			
+			set idx_Date to 1
+			
+			set newFileString to (folder of newFile as string) & theDateString & " " & theTimeString & "_" & (idx_Date as string) & "." & (name extension of newFile as string)
+			
+			repeat
+				if exists ((POSIX path of newFileString) as POSIX file) then
+					set idx_Date to idx_Date + 1
+					set newFileString to (folder of newFile as string) & theDateString & " " & theTimeString & "_" & (idx_Date as string) & "." & (name extension of newFile as string)
+				else
+					exit repeat
+				end if
+			end repeat
+			
+			set name of newFile to theDateString & " " & theTimeString & "_" & (idx_Date as string) & "." & (name extension of newFile as string)
 			
 		end tell
 		
@@ -60,7 +97,6 @@ tell application "iPhoto"
 		
 	end repeat
 	
-	quit
 end tell
 
 tell application "Finder"
